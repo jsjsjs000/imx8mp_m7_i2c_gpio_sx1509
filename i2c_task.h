@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdbool.h>
+#include <fsl_device_registers.h>
 
 #define I2C_OLED_BASE                  I2C4
 #define I2C_OLED_IRQN                  I2C4_IRQn
@@ -10,7 +12,7 @@
 
 #define I2C_OLED ((I2C_Type *)I2C_OLED_BASE)
 
-#define I2C_OLED_SLAVE_ADDR_7BIT   0x3cU    /* SSD1362 */
+#define I2C_OLED_SLAVE_ADDR_7BIT   0x3e     /* SX1509 */
 #define I2C_BAUDRATE               400000   /* 400 KHz */
 #define I2C_BUFFOR_SIZE            256      /* minimum 128 bytes for 256 OLED width (4 bit per color) */
 
@@ -18,4 +20,5 @@
 
 extern void i2c_task_initialize(void);
 extern void i2c_task_task(void *pvParameters);
+extern bool i2c_task_read_data(uint8_t *send, size_t send_size, uint8_t *received, size_t received_size);
 extern bool i2c_task_write_data(uint8_t *data, size_t data_size);

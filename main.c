@@ -88,17 +88,37 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
 
 static void gpio_init(void)
 {
-	gpio_pin_config_t gpio_config = { kGPIO_DigitalOutput, 0, kGPIO_IntLowLevel };
-	GPIO_PinInit(GPIO_BUTTON1_PORT, GPIO_BUTTON1_PIN, &gpio_config);
-	GPIO_PinInit(GPIO_BUTTON2_PORT, GPIO_BUTTON2_PIN, &gpio_config);
-	GPIO_PinInit(GPIO_BUTTON3_PORT, GPIO_BUTTON3_PIN, &gpio_config);
+	gpio_pin_config_t gpio_config =
+	{
+		.direction = kGPIO_DigitalInput,
+		.outputLogic = 1,
+		.interruptMode = kGPIO_IntFallingEdge,
+	};
+	// GPIO_PinInit(GPIO_BUTTON1_PORT, GPIO_BUTTON1_PIN, &gpio_config);
+	// GPIO_PinInit(GPIO_BUTTON2_PORT, GPIO_BUTTON2_PIN, &gpio_config);
+	// GPIO_PinInit(GPIO_BUTTON3_PORT, GPIO_BUTTON3_PIN, &gpio_config);
 	GPIO_PinInit(GPIO_BUTTON4_PORT, GPIO_BUTTON4_PIN, &gpio_config);
+	GPIO_EnableInterrupts(GPIO_BUTTON4_PORT, 1 << GPIO_BUTTON4_PIN);
+	EnableIRQ(GPIO1_INT5_IRQn);
 }
+
+volatile bool irq = false;
+
+void GPIO1_INT5_IRQHandler(void)
+{
+	GPIO_ClearPinsInterruptFlags(GPIO_BUTTON4_PORT, 1 << GPIO_BUTTON4_PIN);
+	irq = true;
+	PRINTF("GPIO IRQ\r\n");
+}
+
+// void GPIO1_Combined_0_15_IRQHandler(void)
+//	GPIO_GetPinsInterruptFlags()
 
 static void master_task(void *pvParameters)
 {
 	PRINTF("Master task started.\r\n");
 
+	// int i = 0;
 	// uint32_t ms, cycle;
 	// uint8_t led_on;
 	while (true)
@@ -108,10 +128,15 @@ static void master_task(void *pvParameters)
 		// led_on = cycle == 0 || cycle == 2;
 		// GPIO_PinWrite(GPIO_LED_PORT, GPIO_LED_PIN, led_on);
 
-		GPIO_PinWrite(GPIO_BUTTON4_PORT, GPIO_BUTTON4_PIN, 0);
-		vTaskDelay(pdMS_TO_TICKS(1));
-		GPIO_PinWrite(GPIO_BUTTON4_PORT, GPIO_BUTTON4_PIN, 1);
-		vTaskDelay(pdMS_TO_TICKS(1));
+		// GPIO_PinWrite(GPIO_BUTTON4_PORT, GPIO_BUTTON4_PIN, 0);
+		// vTaskDelay(pdMS_TO_TICKS(1));
+		// GPIO_PinWrite(GPIO_BUTTON4_PORT, GPIO_BUTTON4_PIN, 1);
+		// vTaskDelay(pdMS_TO_TICKS(1));
+
+		// uint32_t irq = GPIO_PinRead(GPIO_BUTTON4_PORT, GPIO_BUTTON4_PIN);
+		// PRINTF("tick %d\r\n", irq);
+		irq = false;
+		vTaskDelay(pdMS_TO_TICKS(1000));
 	}
 
 	vTaskSuspend(NULL);

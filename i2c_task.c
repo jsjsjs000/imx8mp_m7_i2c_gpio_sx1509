@@ -64,23 +64,87 @@ void i2c_task_task(void *pvParameters)
 {
 	PRINTF("I2C task started.\r\n");
 
-	
+	i2c_gpio_sx1509_reset();
+	i2c_gpio_sx1509_set_high_speed(0, true);
+	i2c_gpio_sx1509_set_high_speed(1, true);
+	i2c_gpio_sx1509_set_direction(0, false);
+	i2c_gpio_sx1509_set_direction(1, false);
 
-	PRINTF("I2C task: Finish draw on OLED.\r\n");
+	i2c_gpio_sx1509_set_high_speed(8, true);
+	i2c_gpio_sx1509_set_high_speed(9, true);
+	i2c_gpio_sx1509_set_pull_up(8, true);
+	i2c_gpio_sx1509_set_pull_up(9, true);
+	i2c_gpio_sx1509_set_direction(8, true);
+	i2c_gpio_sx1509_set_direction(9, true);
 
-	while (true) ;
+	i2c_gpio_sx1509_set_pin_interrupt(8, true);
+	i2c_gpio_sx1509_set_sense_interrupt(8, sense_interrupt_type_falling);
+
+	bool last_in8 = true;
+	bool last_in9 = true;
+	while (true)
+	{
+		i2c_gpio_sx1509_set_data(0, false);
+		i2c_gpio_sx1509_set_data(1, true);
+		vTaskDelay(pdMS_TO_TICKS(100));
+
+		i2c_gpio_sx1509_set_data(0, true);
+		i2c_gpio_sx1509_set_data(1, false);
+		vTaskDelay(pdMS_TO_TICKS(100));
+
+		bool in8, in9;
+		i2c_gpio_sx1509_get_data(8, &in8);
+		i2c_gpio_sx1509_get_data(9, &in9);
+		if (in8 != last_in8)
+		{
+			PRINTF("in8 = %d\r\n", in8);
+			last_in8 = in8;
+		}
+		if (in9 != last_in9)
+		{
+			PRINTF("in9 = %d\r\n", in9);
+			last_in9 = in9;
+		}
+	}
 
 	vTaskSuspend(NULL);
 }
 
+bool i2c_task_read_data(uint8_t *send, size_t send_size, uint8_t *received, size_t received_size)
+{
+		/* write to I2C */
+	memcpy(i2c_buffor, send, send_size);
+	masterXfer.direction = kI2C_Write;
+	masterXfer.dataSize = 1;
+
+	status_t status = I2C_RTOS_Transfer(&master_rtos_handle, &masterXfer);
+	if (status != kStatus_Success)
+	{
+		PRINTF("I2C master: error during write transaction, 0x%x\r\n", status);
+		return false;
+	}
+
+		/* read from I2C */
+	masterXfer.direction = kI2C_Read;
+	masterXfer.dataSize = received_size;
+
+	status = I2C_RTOS_Transfer(&master_rtos_handle, &masterXfer);
+	if (status != kStatus_Success)
+	{
+		PRINTF("I2C master: error during read transaction, 0x%x\r\n", status);
+		return false;
+	}
+	*received = i2c_buffor[0];
+
+	return true;
+}
+
 bool i2c_task_write_data(uint8_t *data, size_t data_size)
 {
+		/* write to I2C */
 	memcpy(i2c_buffor, data, data_size);
-	
 	masterXfer.direction = kI2C_Write;
 	masterXfer.dataSize = data_size;
-
-// PRINTF("I2C master: before write %d %x %x\r\n", j, i2c_buffor[0], i2c_buffor[1]);
 
 	status_t status = I2C_RTOS_Transfer(&master_rtos_handle, &masterXfer);
 	if (status != kStatus_Success)
