@@ -21,7 +21,7 @@
 #define I2C_TASK_TIMER_IN_MS  50
 #define I2C_TASK_TIMER_OUT_MS 100
 
-volatile bool i2c_gpio_sx1509_irq;
+volatile bool i2c_gpio_sx1509_input_irq;
 
 extern void i2c_task_initialize(void);
 extern void i2c_task_task(void *pvParameters);

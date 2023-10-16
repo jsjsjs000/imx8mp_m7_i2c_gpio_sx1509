@@ -22,7 +22,7 @@
 #include "i2c_task.h"
 #include "i2c_gpio_sx1509.h"
 
-volatile bool i2c_gpio_sx1509_irq = false;
+volatile bool i2c_gpio_sx1509_input_irq = false;
 
 static uint8_t i2c_buffor[I2C_BUFFOR_SIZE];
 static i2c_master_handle_t *i2c_master_handle;
@@ -140,10 +140,13 @@ void i2c_task_task(void *pvParameters)
 #endif
 
 #ifdef I2C_TASK_IRQ_INPUT
-		if (i2c_gpio_sx1509_irq || GPIO_PinRead(I2C_GPIO_SX1509_IRQ_PORT, I2C_GPIO_SX1509_IRQ_PIN) == 0)
-		{
-			i2c_gpio_sx1509_irq = false;
+		taskENTER_CRITICAL();
+		bool input_irq = i2c_gpio_sx1509_input_irq;
+		i2c_gpio_sx1509_input_irq = false;
+		taskEXIT_CRITICAL();
 
+		if (input_irq || GPIO_PinRead(I2C_GPIO_SX1509_IRQ_PORT, I2C_GPIO_SX1509_IRQ_PIN) == 0)
+		{
 			uint16_t in;
 			if (i2c_gpio_sx1509_get_interrupt_source(&in))
 			{

@@ -94,7 +94,10 @@ static void gpio_init(void)
 void GPIO1_INT5_IRQHandler(void)
 {
 	GPIO_ClearPinsInterruptFlags(GPIO_BUTTON4_PORT, 1 << GPIO_BUTTON4_PIN);
-	i2c_gpio_sx1509_irq = true;
+
+	UBaseType_t irq_status = taskENTER_CRITICAL_FROM_ISR();
+	i2c_gpio_sx1509_input_irq = true;
+	taskEXIT_CRITICAL_FROM_ISR(irq_status);
 
 	PRINTF("GPIO IRQ\r\n");
 }
