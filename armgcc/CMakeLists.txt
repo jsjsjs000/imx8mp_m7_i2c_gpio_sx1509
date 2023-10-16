@@ -45,6 +45,7 @@ include(${ProjDirPath}/flags.cmake)
 include(${ProjDirPath}/config.cmake)
 
 add_executable(${MCUX_SDK_PROJECT_NAME} 
+	"${ProjDirPath}/../main.h"
 	"${ProjDirPath}/../main.c"
 	"${ProjDirPath}/../FreeRTOSConfig.h"
 	"${ProjDirPath}/../board_cfg/pin_mux.c"

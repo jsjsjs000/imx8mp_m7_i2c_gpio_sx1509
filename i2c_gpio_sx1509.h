@@ -40,3 +40,4 @@ extern bool i2c_gpio_sx1509_set_data(uint8_t pin, bool output);
 extern bool i2c_gpio_sx1509_get_data(uint8_t pin, bool *input);
 extern bool i2c_gpio_sx1509_set_pin_interrupt(uint8_t pin, bool interrupt);
 extern bool i2c_gpio_sx1509_set_sense_interrupt(uint8_t pin, sense_interrupt_type_t sense_interrupt_type);
+extern bool i2c_gpio_sx1509_get_interrupt_source(uint16_t *value);

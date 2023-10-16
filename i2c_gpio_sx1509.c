@@ -18,10 +18,10 @@ static bool i2c_gpio_sx1509_write_register(uint8_t reg, uint8_t value)
 
 bool i2c_gpio_sx1509_reset(void)
 {
-	if (!i2c_gpio_sx1509_write_register(REG_LONG_SLEW_A, 0x12))
+	if (!i2c_gpio_sx1509_write_register(REG_RESET, 0x12))
 		return false;
 
-	return i2c_gpio_sx1509_write_register(REG_LONG_SLEW_A, 0x34);
+	return i2c_gpio_sx1509_write_register(REG_RESET, 0x34);
 }
 
 bool i2c_gpio_sx1509_set_high_speed(uint8_t pin, bool high_speed)
@@ -98,7 +98,7 @@ bool i2c_gpio_sx1509_set_pin_interrupt(uint8_t pin, bool interrupt)
 	if (!i2c_gpio_sx1509_read_register(register_, &value))
 		return false;
 
-	if (interrupt)
+	if (!interrupt)
 		value |= (1 << (pin % 8));
 	else
 		value &= ~(1 << (pin % 8));
@@ -120,7 +120,30 @@ bool i2c_gpio_sx1509_set_sense_interrupt(uint8_t pin, sense_interrupt_type_t sen
 	if (!i2c_gpio_sx1509_read_register(register_, &value))
 		return false;
 
-	value &= ~(3 << (pin % 4));
+	value &= ~(3 << ((pin % 4) * 2));
 	value |= (sense_interrupt_type << ((pin % 4) * 2));
 	return i2c_gpio_sx1509_write_register(register_, value);
 }
+
+bool i2c_gpio_sx1509_get_interrupt_source(uint16_t *value)
+{
+	uint8_t value1, value2;
+	if (!i2c_gpio_sx1509_read_register(REG_INTERRUPT_SOURCE_A, &value1))
+		return false;
+
+	if (!i2c_gpio_sx1509_read_register(REG_INTERRUPT_SOURCE_B, &value2))
+		return false;
+
+	*value = value1 | (value2 << 8);
+
+	if (!i2c_gpio_sx1509_write_register(REG_INTERRUPT_SOURCE_A, 0xff))
+		return false;
+
+	return i2c_gpio_sx1509_write_register(REG_INTERRUPT_SOURCE_B, 0xff);
+}
+
+/*
+	https://kamami.pl/ekspandery-linii-io/560121-sx1509-breakout-16-liniowy-ekspander-portow-io-z-interfejsem-i2c-bob-13601.html
+	https://cdn.sparkfun.com/datasheets/BreakoutBoards/SparkFun-SX1509-Breakout-v20.pdf
+	https://cdn.sparkfun.com/datasheets/BreakoutBoards/sx1509.pdf
+*/

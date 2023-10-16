@@ -18,6 +18,11 @@
 
 #define master_task_PRIORITY (configMAX_PRIORITIES - 2)
 
+#define I2C_TASK_TIMER_IN_MS  50
+#define I2C_TASK_TIMER_OUT_MS 100
+
+volatile bool i2c_gpio_sx1509_irq;
+
 extern void i2c_task_initialize(void);
 extern void i2c_task_task(void *pvParameters);
 extern bool i2c_task_read_data(uint8_t *send, size_t send_size, uint8_t *received, size_t received_size);

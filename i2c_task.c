@@ -1,6 +1,7 @@
 	/* Freescale includes. */
 #include <fsl_device_registers.h>
 #include <fsl_debug_console.h>
+#include <fsl_gpio.h>
 #include <fsl_i2c.h>
 #include <fsl_i2c_freertos.h>
 
@@ -16,9 +17,12 @@
 #include "board_cfg/clock_config.h"
 #include "board_cfg/pin_mux.h"
 
+#include "main.h"
 #include "common.h"
 #include "i2c_task.h"
 #include "i2c_gpio_sx1509.h"
+
+volatile bool i2c_gpio_sx1509_irq = false;
 
 static uint8_t i2c_buffor[I2C_BUFFOR_SIZE];
 static i2c_master_handle_t *i2c_master_handle;
@@ -65,6 +69,7 @@ void i2c_task_task(void *pvParameters)
 	PRINTF("I2C task started.\r\n");
 
 	i2c_gpio_sx1509_reset();
+	vTaskDelay(10);
 	i2c_gpio_sx1509_set_high_speed(0, true);
 	i2c_gpio_sx1509_set_high_speed(1, true);
 	i2c_gpio_sx1509_set_direction(0, false);
@@ -77,34 +82,82 @@ void i2c_task_task(void *pvParameters)
 	i2c_gpio_sx1509_set_direction(8, true);
 	i2c_gpio_sx1509_set_direction(9, true);
 
-	i2c_gpio_sx1509_set_pin_interrupt(8, true);
+#ifdef I2C_TASK_SCAN_INPUT
+	i2c_gpio_sx1509_set_pin_interrupt(8, false);
+	i2c_gpio_sx1509_set_pin_interrupt(9, false);
+#endif
+#ifdef I2C_TASK_IRQ_INPUT
 	i2c_gpio_sx1509_set_sense_interrupt(8, sense_interrupt_type_falling);
+	i2c_gpio_sx1509_set_sense_interrupt(9, sense_interrupt_type_falling);
+	i2c_gpio_sx1509_set_pin_interrupt(8, true);
+	i2c_gpio_sx1509_set_pin_interrupt(9, true);
+#endif
 
+#ifdef I2C_TASK_SCAN_INPUT
+	TickType_t timer_out_100ms = xTaskGetTickCount();
+	TickType_t timer_int_50ms = xTaskGetTickCount();
+	bool last_out = false;
 	bool last_in8 = true;
 	bool last_in9 = true;
+#endif
+
+#ifdef I2C_TASK_IRQ_INPUT
+	uint16_t in_;
+	i2c_gpio_sx1509_get_interrupt_source(&in_);
+#endif
+
+
 	while (true)
 	{
-		i2c_gpio_sx1509_set_data(0, false);
-		i2c_gpio_sx1509_set_data(1, true);
-		vTaskDelay(pdMS_TO_TICKS(100));
-
-		i2c_gpio_sx1509_set_data(0, true);
-		i2c_gpio_sx1509_set_data(1, false);
-		vTaskDelay(pdMS_TO_TICKS(100));
-
-		bool in8, in9;
-		i2c_gpio_sx1509_get_data(8, &in8);
-		i2c_gpio_sx1509_get_data(9, &in9);
-		if (in8 != last_in8)
+#ifdef I2C_TASK_SCAN_INPUT
+		if (xTaskGetTickCount() - timer_out_100ms >= I2C_TASK_TIMER_OUT_MS)
 		{
-			PRINTF("in8 = %d\r\n", in8);
-			last_in8 = in8;
+			timer_out_100ms = xTaskGetTickCount();
+
+			i2c_gpio_sx1509_set_data(last_out, false);
+			i2c_gpio_sx1509_set_data(!last_out, true);
+			last_out = !last_out;
 		}
-		if (in9 != last_in9)
+
+		if (xTaskGetTickCount() - timer_int_50ms >= I2C_TASK_TIMER_IN_MS)
 		{
-			PRINTF("in9 = %d\r\n", in9);
-			last_in9 = in9;
+			timer_int_50ms = xTaskGetTickCount();
+
+			bool in8, in9;
+			i2c_gpio_sx1509_get_data(8, &in8);
+			i2c_gpio_sx1509_get_data(9, &in9);
+			if (in8 != last_in8)
+			{
+				PRINTF("in8 = %d\r\n", in8);
+				last_in8 = in8;
+			}
+			if (in9 != last_in9)
+			{
+				PRINTF("in9 = %d\r\n", in9);
+				last_in9 = in9;
+			}
 		}
+#endif
+
+#ifdef I2C_TASK_IRQ_INPUT
+		if (i2c_gpio_sx1509_irq || GPIO_PinRead(I2C_GPIO_SX1509_IRQ_PORT, I2C_GPIO_SX1509_IRQ_PIN) == 0)
+		{
+			i2c_gpio_sx1509_irq = false;
+
+			uint16_t in;
+			if (i2c_gpio_sx1509_get_interrupt_source(&in))
+			{
+				bool in8 = GET_BIT(in, 8) != 0;
+				bool in9 = GET_BIT(in, 9) != 0;
+				if (in8)
+					PRINTF("in8 fall down\r\n", in8);
+				if (in9)
+					PRINTF("in9 fall down\r\n", in9);
+			}
+		}
+#endif
+
+		vTaskDelay(pdMS_TO_TICKS(1));
 	}
 
 	vTaskSuspend(NULL);

@@ -15,7 +15,7 @@
 
 #define UINT16_FROM_BYTES(a1, a0)  (((a1) << 8) | (a0))
 
-#define GET_BIT(byte, bit_nr)  ((byte) >> (bit_nr) & 0x01)
+#define GET_BIT(byte, bit_nr)  ((byte) >> (bit_nr) & 0x01U)
 #define SET_BIT(byte, bit_nr)  ((byte) | (1U << (bit_nr)))
 #define CLR_BIT(byte, bit_nr)  ((byte) & ~(1U << (bit_nr)))
 

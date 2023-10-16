@@ -21,20 +21,8 @@
 #include "board_cfg/clock_config.h"
 #include "board_cfg/pin_mux.h"
 
+#include "main.h"
 #include "i2c_task.h"
-
-#define TASK_STACK_SIZE 1024
-
-#define GPIO_BUTTON1_PORT  GPIO1
-#define GPIO_BUTTON1_PIN   0U
-#define GPIO_BUTTON2_PORT  GPIO1
-#define GPIO_BUTTON2_PIN   1U
-#define GPIO_BUTTON3_PORT  GPIO1
-#define GPIO_BUTTON3_PIN   3U
-#define GPIO_BUTTON4_PORT  GPIO1
-#define GPIO_BUTTON4_PIN   5U
-
-#define master_task_PRIORITY (configMAX_PRIORITIES - 2)
 
 static void gpio_init(void);
 static void master_task(void *pvParameters);
@@ -102,12 +90,12 @@ static void gpio_init(void)
 	EnableIRQ(GPIO1_INT5_IRQn);
 }
 
-volatile bool irq = false;
 
 void GPIO1_INT5_IRQHandler(void)
 {
 	GPIO_ClearPinsInterruptFlags(GPIO_BUTTON4_PORT, 1 << GPIO_BUTTON4_PIN);
-	irq = true;
+	i2c_gpio_sx1509_irq = true;
+
 	PRINTF("GPIO IRQ\r\n");
 }
 
@@ -135,7 +123,6 @@ static void master_task(void *pvParameters)
 
 		// uint32_t irq = GPIO_PinRead(GPIO_BUTTON4_PORT, GPIO_BUTTON4_PIN);
 		// PRINTF("tick %d\r\n", irq);
-		irq = false;
 		vTaskDelay(pdMS_TO_TICKS(1000));
 	}
 
