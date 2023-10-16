@@ -143,7 +143,9 @@ bool i2c_gpio_sx1509_get_interrupt_source(uint16_t *value)
 }
 
 /*
+	Sparkfun SX1509 Breakout - 16-liniowy ekspander portów I/O z interfejsem I2C
 	https://kamami.pl/ekspandery-linii-io/560121-sx1509-breakout-16-liniowy-ekspander-portow-io-z-interfejsem-i2c-bob-13601.html
+	https://www.sparkfun.com/products/13601
 	https://cdn.sparkfun.com/datasheets/BreakoutBoards/SparkFun-SX1509-Breakout-v20.pdf
 	https://cdn.sparkfun.com/datasheets/BreakoutBoards/sx1509.pdf
 */
